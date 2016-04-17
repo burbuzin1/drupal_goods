@@ -1,0 +1,103 @@
+<?php
+
+/*
+ * модуль для отработки передачи данных из форм
+ *
+ */
+
+//Hook menu
+function test_form_menu() {
+  $items = array();
+  $items['test'] = array(
+    'title' => 'test',
+    //'page callback' => 'drupal_get_form', //т.к. нет формы, то мы ее и не вызываем
+    'page callback' => 'test_form_table',
+    'access callback' => TRUE,
+  );
+
+  $items['link/%'] = array(
+    'title' => 'link',
+    'page arguments' => array('test_form_link', 1),
+    'access callback' => TRUE,
+
+  );
+  return $items;
+}
+
+function select() {
+  $query = db_select('block', 't')
+    ->fields('t', array(
+        'bid',
+        'module',
+        'delta',
+        'theme',
+        'status',
+        'weight'
+      )    )
+    ->execute();
+  return $query;
+}
+
+function headers() {
+  $header = array(
+    'bid',
+    'module',
+    'delta',
+    'theme',
+    'status',
+    'weight',
+    'links'
+  );
+  return $header;
+}
+
+function test_form_table() {
+  $query = select();
+  $header = headers();
+  $rows = array();
+
+  while ($value = $query->fetchAssoc()) {
+    $rows[] = array(
+      $value['bid'],
+      $value['module'],
+      $value['delta'],
+      $value['theme'],
+      $value['status'],
+      $value['weight'],
+      $value['links']['#markup'] = l('link', 'link/' . $value['bid']),
+    );
+  }
+  dsm($rows);
+  return array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows
+  );
+
+}
+
+function test_form_link() {
+
+  $header = headers();
+  $rows = test_form_table();
+
+  $query = db_select('block', 't')
+    ->fields('t', array(
+        'bid',
+        'module',
+        'delta',
+        'theme',
+        'status',
+        'weight'
+      )
+    )
+    ->condition('bid', $rows['bid'])
+    ->execute();
+
+
+  return array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows
+  );
+}
